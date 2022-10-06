@@ -1,5 +1,5 @@
 [package]
-name = "PEKS"
+name = "rust-searchable-pke"
 version = "0.1.0"
 edition = "2021"
 
