@@ -8,10 +8,13 @@ edition = "2021"
 [dependencies]
 paired = "0.22.0"
 groupy = "0.4.1"
-sha2 = "0.10.6"
 thiserror = "1.0.37"
 fff = "0.3.1"
 rand_core = "0.5.1"
+digest = { version = "0.9.0", features = ["std"] }
+sha2 = "0.9.0"
+ec-gpu-gen = "0.4.0"
+itertools = "0.10.5"
 
 [dev-dependencies]
 rand_xorshift = "0.2"
