@@ -1,8 +1,8 @@
 use crate::BaseROFr;
-use digest::{Digest, ExtendableOutput, Update};
-use fff::{Field, PrimeField, PrimeFieldDecodingError, PrimeFieldRepr};
+use digest::Digest;
+use fff::PrimeFieldDecodingError;
 use groupy::CurveProjective;
-use paired::{hash_to_field, BaseFromRO, Compress, Engine, ExpandMsgXmd, FromRO, HashToCurve};
+use paired::{hash_to_field, Compress, Engine, ExpandMsgXmd};
 use sha2::Sha256;
 use std::io;
 use thiserror::Error;

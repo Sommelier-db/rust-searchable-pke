@@ -2,7 +2,6 @@ mod hashes;
 pub mod pecdk;
 pub mod peks;
 mod utils;
-use fff::{PrimeField, ScalarEngine, SqrtField};
 pub use hashes::*;
 use paired::{
     bls12_381::{Bls12, Fr},

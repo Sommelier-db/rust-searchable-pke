@@ -1,7 +1,5 @@
-use ec_gpu_gen::fft_cpu::serial_fft;
-use fff::{Field, PrimeField};
+use fff::PrimeField;
 use itertools::Itertools;
-use paired::Engine;
 
 pub(crate) fn polynomial_from_roots<F: PrimeField>(roots: &[F]) -> Vec<F> {
     let m = roots.len();
@@ -37,8 +35,8 @@ pub(crate) fn polynomial_from_roots<F: PrimeField>(roots: &[F]) -> Vec<F> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use fff::Field;
     use paired::bls12_381::Fr;
-    use rand::{thread_rng, Rng};
     use rand_core::SeedableRng;
     use rand_xorshift::XorShiftRng;
 

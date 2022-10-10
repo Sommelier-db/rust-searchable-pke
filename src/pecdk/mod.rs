@@ -2,7 +2,7 @@ use crate::utils::polynomial_from_roots;
 use crate::{hashes::*, BaseROFr};
 use fff::{Field, PrimeField};
 use groupy::{CurveAffine, CurveProjective};
-use paired::{BaseFromRO, Engine};
+use paired::Engine;
 use rand_core::RngCore;
 use thiserror::Error;
 
@@ -303,8 +303,8 @@ mod test {
         let public_key = secret_key.into_public_key(&mut rng);
         let mut thread_rng = thread_rng();
         let mut keywords = Vec::with_capacity(n);
-        for i in 0..n {
-            let keyword = (0..5).map(|_| thread_rng.gen()).collect::<Vec<u8>>();
+        for _ in 0..n {
+            let keyword = (0..16).map(|_| thread_rng.gen()).collect::<Vec<u8>>();
             keywords.push(keyword);
         }
         let ct = public_key

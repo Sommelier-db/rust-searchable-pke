@@ -1,9 +1,8 @@
 use crate::hashes::*;
-use fff::{Field, PrimeField};
+use fff::Field;
 use groupy::{CurveAffine, CurveProjective};
 use paired::Engine;
 use rand_core::RngCore;
-use std::io;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
