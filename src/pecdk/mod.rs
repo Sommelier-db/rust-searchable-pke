@@ -308,7 +308,7 @@ mod test {
             0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06,
             0xbc, 0xe5,
         ]);
-        let n = 10;
+        let n = 16;
         let secret_key = SecretKey::<Bls12>::gen(&mut rng, n);
         let public_key = secret_key.into_public_key(&mut rng);
         let mut thread_rng = thread_rng();
