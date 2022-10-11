@@ -4,6 +4,7 @@ use fff::{Field, PrimeField};
 use groupy::{CurveAffine, CurveProjective};
 use paired::Engine;
 use rand_core::RngCore;
+use rayon::prelude::*;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -114,7 +115,7 @@ impl<E: Engine> SecretKey<E> {
         minus_one.sub_assign(&one);
 
         let hashes = keywords
-            .into_iter()
+            .into_par_iter()
             .map(|word| hash_bytes2field::<F, E>(&word, TAG.as_bytes()))
             .collect::<Result<Vec<E::Fr>, ECHashError>>()?;
 
@@ -134,6 +135,7 @@ impl<E: Engine> SecretKey<E> {
             .ok_or(PECDKError::InverseFrError(denominator))?;
 
         let beta_invs = (0..m + 1)
+            .into_par_iter()
             .map(|i| {
                 self.betas[i]
                     .inverse()
@@ -142,6 +144,7 @@ impl<E: Engine> SecretKey<E> {
             .collect::<Result<Vec<E::Fr>, PECDKError<E>>>()?;
 
         let t1s = (0..m + 1)
+            .into_par_iter()
             .map(|i| {
                 let mut scalar = coefficients[i].clone();
                 scalar.mul_assign(&denominator);
@@ -149,7 +152,7 @@ impl<E: Engine> SecretKey<E> {
             })
             .collect::<Vec<E::G1Affine>>();
         let t2s = t1s
-            .iter()
+            .par_iter()
             .enumerate()
             .map(|(i, t1)| t1.mul(beta_invs[i]).into_affine())
             .collect();
@@ -187,6 +190,7 @@ impl<E: Engine> PublicKey<E> {
             let r: E::Fr = rs[i];
             let hashed_word = hash_bytes2field::<F, E>(&keywords[i], tag)?;
             let a_point_vec = (0..n + 1)
+                .into_par_iter()
                 .map(|j| {
                     let mut xr = self.x_points[j].mul(r.clone());
                     let mut rh_u = r;
@@ -200,14 +204,17 @@ impl<E: Engine> PublicKey<E> {
             a_points.push(a_point_vec);
 
             let b_point_vec = (0..n + 1)
+                .into_par_iter()
                 .map(|j| self.y_points[j].mul(uss[i][j]).into_affine())
                 .collect::<Vec<E::G2Affine>>();
             b_points.push(b_point_vec);
         }
         let c_points = (0..n)
+            .into_par_iter()
             .map(|i| self.z_point.mul(rs[i]).into_affine())
             .collect::<Vec<E::G2Affine>>();
         let d_bytes = (0..n)
+            .into_par_iter()
             .map(|i| {
                 let field = self.mue.pow(rs[i].into_repr());
                 hash_field2bytes::<E>(field)
@@ -226,34 +233,37 @@ impl<E: Engine> Trapdoor<E> {
     pub fn test(&self, ct: &Ciphertext<E>) -> Result<bool, PECDKError<E>> {
         let n = ct.c_points.len();
         let m = self.t1s.len() - 1;
-        let mut test1s = Vec::with_capacity(n);
-        for i in 0..n {
-            let mut val = E::Fqk::one();
-            let c_powed = ct.c_points[i].mul(self.t3);
-            for j in 0..(m + 1) {
-                let mut point2 = ct.a_points[i][j].into_projective();
-                point2.add_assign(&c_powed);
-                let paired = E::pairing(self.t1s[j].into_projective(), point2);
-                val.mul_assign(&paired);
-            }
-            test1s.push(val);
-        }
+        let test1s = (0..n)
+            .into_par_iter()
+            .map(|i| {
+                let c_powed = ct.c_points[i].mul(self.t3);
+                let mut val = E::Fqk::one();
+                for j in 0..(m + 1) {
+                    let mut point2 = ct.a_points[i][j].into_projective();
+                    point2.add_assign(&c_powed);
+                    let paired = E::pairing(self.t1s[j].into_projective(), point2);
+                    val.mul_assign(&paired);
+                }
+                val
+            })
+            .collect::<Vec<E::Fqk>>();
 
-        let mut test2_invs = Vec::with_capacity(n);
-        for i in 0..n {
-            let mut val = E::Fqk::one();
-            for j in 0..(m + 1) {
-                let paired = E::pairing(
-                    self.t2s[j].into_projective(),
-                    ct.b_points[i][j].into_projective(),
-                );
-                val.mul_assign(&paired);
-            }
-            let inv = val.inverse().ok_or(PECDKError::<E>::InverseFqkError(val))?;
-            test2_invs.push(inv);
-        }
+        let test2_invs = (0..n)
+            .into_par_iter()
+            .map(|i| {
+                let mut val = E::Fqk::one();
+                for j in 0..(m + 1) {
+                    let paired = E::pairing(
+                        self.t2s[j].into_projective(),
+                        ct.b_points[i][j].into_projective(),
+                    );
+                    val.mul_assign(&paired);
+                }
+                val.inverse().ok_or(PECDKError::<E>::InverseFqkError(val))
+            })
+            .collect::<Result<Vec<E::Fqk>, PECDKError<E>>>()?;
         let test_hashes = test1s
-            .into_iter()
+            .into_par_iter()
             .zip(test2_invs)
             .map(|(test1, test2_inv)| {
                 let mut val = test1;
@@ -293,12 +303,12 @@ mod test {
     use rand_xorshift::XorShiftRng;
 
     #[test]
-    fn test_pecdk_valid_case() {
+    fn test_pecdk_valid_case_and_or() {
         let mut rng = <XorShiftRng as SeedableRng>::from_seed([
             0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06,
             0xbc, 0xe5,
         ]);
-        let n = 8;
+        let n = 10;
         let secret_key = SecretKey::<Bls12>::gen(&mut rng, n);
         let public_key = secret_key.into_public_key(&mut rng);
         let mut thread_rng = thread_rng();

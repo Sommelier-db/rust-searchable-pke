@@ -15,6 +15,7 @@ digest = { version = "0.9.0", features = ["std"] }
 sha2 = "0.9.0"
 ec-gpu-gen = "0.4.0"
 itertools = "0.10.5"
+rayon = "1.5.3"
 
 [dev-dependencies]
 rand_xorshift = "0.2"
