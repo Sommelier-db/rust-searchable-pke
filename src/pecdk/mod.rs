@@ -2,7 +2,7 @@ use crate::utils::polynomial_from_roots;
 use crate::{hashes::*, BaseROFr};
 use fff::{Field, PrimeField};
 use groupy::{CurveAffine, CurveProjective};
-use paired::Engine;
+use paired::{Engine, PairingCurveAffine};
 use rand_core::RngCore;
 use rayon::prelude::*;
 use thiserror::Error;
@@ -39,7 +39,7 @@ pub struct Ciphertext<E: Engine> {
     a_points: Vec<Vec<E::G2Affine>>,
     b_points: Vec<Vec<E::G2Affine>>,
     c_points: Vec<E::G2Affine>,
-    d_bytes: Vec<Vec<u8>>,
+    d_scalars: Vec<E::Fqk>,
 }
 
 #[derive(Debug, Clone)]
@@ -213,24 +213,28 @@ impl<E: Engine> PublicKey<E> {
             .into_par_iter()
             .map(|i| self.z_point.mul(rs[i]).into_affine())
             .collect::<Vec<E::G2Affine>>();
-        let d_bytes = (0..n)
+        /*let d_bytes = (0..n)
+        .into_par_iter()
+        .map(|i| {
+            let field = self.mue.pow(rs[i].into_repr());
+            hash_field2bytes::<E>(field)
+        })
+        .collect::<Result<Vec<Vec<u8>>, ECHashError>>()?;*/
+        let d_scalars = (0..n)
             .into_par_iter()
-            .map(|i| {
-                let field = self.mue.pow(rs[i].into_repr());
-                hash_field2bytes::<E>(field)
-            })
-            .collect::<Result<Vec<Vec<u8>>, ECHashError>>()?;
+            .map(|i| self.mue.pow(rs[i].into_repr()))
+            .collect::<Vec<E::Fqk>>();
         Ok(Ciphertext {
             a_points,
             b_points,
             c_points,
-            d_bytes,
+            d_scalars,
         })
     }
 }
 
 impl<E: Engine> Trapdoor<E> {
-    pub fn test(&self, ct: &Ciphertext<E>) -> Result<bool, PECDKError<E>> {
+    pub fn test<R: RngCore>(&self, ct: &Ciphertext<E>, rng: &mut R) -> Result<bool, PECDKError<E>> {
         let n = ct.c_points.len();
         let m = self.t1s.len() - 1;
         let test1s = (0..n)
@@ -241,7 +245,9 @@ impl<E: Engine> Trapdoor<E> {
                 for j in 0..(m + 1) {
                     let mut point2 = ct.a_points[i][j].into_projective();
                     point2.add_assign(&c_powed);
-                    let paired = E::pairing(self.t1s[j].into_projective(), point2);
+                    let paired = E::miller_loop(
+                        [(&(self.t1s[j].prepare()), &(point2.into_affine().prepare()))].iter(),
+                    );
                     val.mul_assign(&paired);
                 }
                 val
@@ -253,42 +259,49 @@ impl<E: Engine> Trapdoor<E> {
             .map(|i| {
                 let mut val = E::Fqk::one();
                 for j in 0..(m + 1) {
-                    let paired = E::pairing(
-                        self.t2s[j].into_projective(),
-                        ct.b_points[i][j].into_projective(),
+                    let paired = E::miller_loop(
+                        [(&(self.t2s[j].prepare()), &(ct.b_points[i][j].prepare()))].iter(),
                     );
                     val.mul_assign(&paired);
                 }
                 val.inverse().ok_or(PECDKError::<E>::InverseFqkError(val))
             })
             .collect::<Result<Vec<E::Fqk>, PECDKError<E>>>()?;
-        let test_hashes = test1s
+        let test_scalars_without_exp = test1s
             .into_par_iter()
             .zip(test2_invs)
             .map(|(test1, test2_inv)| {
                 let mut val = test1;
                 val.mul_assign(&test2_inv);
-                hash_field2bytes::<E>(val)
+                val
+                //hash_field2bytes::<E>(val)
             })
-            .collect::<Result<Vec<Vec<u8>>, ECHashError>>()?;
+            .collect::<Vec<E::Fqk>>();
         match self.sym {
             SearchSym::AND => {
-                let mut j = 0;
+                let r = E::Fr::random(rng);
+                let mut coeff = E::Fr::one();
+                let mut left = E::Fqk::one();
+                let mut right = E::Fqk::one();
                 for i in 0..n {
-                    if test_hashes[i] == ct.d_bytes[i] {
-                        j += 1;
-                    } else {
-                        j += 0;
-                    }
+                    let l_val = test_scalars_without_exp[i].pow(coeff.into_repr());
+                    left.mul_assign(&l_val);
+                    let r_val = ct.d_scalars[i].pow(coeff.into_repr());
+                    right.mul_assign(&r_val);
+                    coeff.mul_assign(&r);
                 }
-                Ok(j == m)
+                left = E::final_exponentiation(&left).unwrap();
+                Ok(left == right)
             }
             SearchSym::OR => {
-                let mut result = false;
                 for i in 0..n {
-                    result |= test_hashes[i] == ct.d_bytes[i];
+                    let left = E::final_exponentiation(&test_scalars_without_exp[i]).unwrap();
+                    let right = ct.d_scalars[i];
+                    if left == right {
+                        return Ok(true);
+                    }
                 }
-                Ok(result)
+                Ok(false)
             }
         }
     }
@@ -324,10 +337,10 @@ mod test {
         let trapdoor_and = secret_key
             .gen_trapdoor::<_, Fr>(keywords.clone(), SearchSym::AND, &mut rng)
             .unwrap();
-        assert_eq!(trapdoor_and.test(&ct).unwrap(), true);
+        assert_eq!(trapdoor_and.test(&ct, &mut rng).unwrap(), true);
         let trapdoor_or = secret_key
             .gen_trapdoor::<_, Fr>(keywords, SearchSym::OR, &mut rng)
             .unwrap();
-        assert_eq!(trapdoor_or.test(&ct).unwrap(), true);
+        assert_eq!(trapdoor_or.test(&ct, &mut rng).unwrap(), true);
     }
 }
