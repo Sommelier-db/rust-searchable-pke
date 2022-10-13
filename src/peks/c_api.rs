@@ -47,7 +47,7 @@ pub extern "C" fn gen_secret_key() -> CPeksSecretKey {
 }
 
 #[no_mangle]
-pub extern "C" fn gen_public_key(secret_key: &CPeksSecretKey) -> CPeksPublicKey {
+pub extern "C" fn peks_gen_public_key(secret_key: &CPeksSecretKey) -> CPeksPublicKey {
     let mut rng = OsRng;
     let sk = serde_json::from_str::<SecretKey<Bls12>>(&ptr2str(secret_key.ptr)).unwrap();
     let pk = sk.into_public_key(&mut rng);
@@ -58,7 +58,7 @@ pub extern "C" fn gen_public_key(secret_key: &CPeksSecretKey) -> CPeksPublicKey 
 }
 
 #[no_mangle]
-pub extern "C" fn encrypt_keyword(
+pub extern "C" fn peks_encrypt_keyword(
     public_key: &CPeksPublicKey,
     keyword: *mut c_char,
 ) -> CPeksCiphertext {
@@ -73,7 +73,10 @@ pub extern "C" fn encrypt_keyword(
 }
 
 #[no_mangle]
-pub extern "C" fn gen_trapdoor(secret_key: &CPeksSecretKey, keyword: *mut c_char) -> CPeksTrapdoor {
+pub extern "C" fn peks_gen_trapdoor(
+    secret_key: &CPeksSecretKey,
+    keyword: *mut c_char,
+) -> CPeksTrapdoor {
     let sk = serde_json::from_str::<SecretKey<Bls12>>(&ptr2str(secret_key.ptr)).unwrap();
     let keyword = ptr2str(keyword).as_bytes();
     let td = sk.gen_trapdoor(keyword);
@@ -84,9 +87,29 @@ pub extern "C" fn gen_trapdoor(secret_key: &CPeksSecretKey, keyword: *mut c_char
 }
 
 #[no_mangle]
-pub extern "C" fn test(ciphertext: CPeksCiphertext, trapdoor: CPeksTrapdoor) -> bool {
+pub extern "C" fn peks_test(ciphertext: CPeksCiphertext, trapdoor: CPeksTrapdoor) -> bool {
     let ct = serde_json::from_str::<Ciphertext<Bls12>>(&ptr2str(ciphertext.ptr)).unwrap();
     let td = serde_json::from_str::<Trapdoor<Bls12>>(&ptr2str(trapdoor.ptr)).unwrap();
     let tested = td.test(&ct).unwrap();
     tested
+}
+
+#[no_mangle]
+pub extern "C" fn peks_free_secret_key(secret_key: CPeksSecretKey) {
+    drop_ptr(secret_key.ptr);
+}
+
+#[no_mangle]
+pub extern "C" fn peks_free_public_key(public_key: CPeksPublicKey) {
+    drop_ptr(public_key.ptr);
+}
+
+#[no_mangle]
+pub extern "C" fn peks_free_ciphertext(ciphertext: CPeksCiphertext) {
+    drop_ptr(ciphertext.ptr);
+}
+
+#[no_mangle]
+pub extern "C" fn peks_free_trapdoor(trapdoor: CPeksTrapdoor) {
+    drop_ptr(trapdoor.ptr);
 }
