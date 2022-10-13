@@ -1,3 +1,4 @@
+mod c_utils;
 mod hashes;
 pub mod pecdk;
 pub mod peks;
@@ -7,6 +8,8 @@ use paired::{
     bls12_381::{Bls12, Fr},
     BaseFromRO, Engine,
 };
+pub use pecdk::*;
+pub use peks::*;
 
 pub trait BaseROFr<E: Engine>: BaseFromRO + Clone + From<E::Fr> + Into<E::Fr> {}
 

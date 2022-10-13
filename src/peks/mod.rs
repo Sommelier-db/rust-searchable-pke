@@ -3,7 +3,10 @@ use fff::Field;
 use groupy::{CurveAffine, CurveProjective};
 use paired::Engine;
 use rand_core::RngCore;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
+mod c_api;
+pub use c_api::*;
 
 #[derive(Error, Debug)]
 pub enum PEKSError {
@@ -11,24 +14,24 @@ pub enum PEKSError {
     ECHashError(#[from] ECHashError),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SecretKey<E: Engine> {
     alpha: E::Fr,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PublicKey<E: Engine> {
     g: E::G2Affine,
     h: E::G2Affine,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Ciphertext<E: Engine> {
     a: E::G2Affine,
     b: Vec<u8>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Trapdoor<E: Engine> {
     t: E::G1Affine,
 }

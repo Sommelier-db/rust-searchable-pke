@@ -213,13 +213,6 @@ impl<E: Engine> PublicKey<E> {
             .into_par_iter()
             .map(|i| self.z_point.mul(rs[i]).into_affine())
             .collect::<Vec<E::G2Affine>>();
-        /*let d_bytes = (0..n)
-        .into_par_iter()
-        .map(|i| {
-            let field = self.mue.pow(rs[i].into_repr());
-            hash_field2bytes::<E>(field)
-        })
-        .collect::<Result<Vec<Vec<u8>>, ECHashError>>()?;*/
         let d_scalars = (0..n)
             .into_par_iter()
             .map(|i| self.mue.pow(rs[i].into_repr()))
