@@ -38,9 +38,7 @@ pub struct CPeksTrapdoor {
 pub extern "C" fn gen_secret_key() -> CPeksSecretKey {
     let mut rng = OsRng;
     let sk = SecretKey::<Bls12>::gen(&mut rng);
-    //let pk = sk.into_public_key(&mut rng);
     let sk_str = serde_json::to_string(&sk).unwrap();
-    //let pk_str =
     CPeksSecretKey {
         ptr: str2ptr(sk_str),
     }
