@@ -7,10 +7,6 @@
 #include <stdlib.h>
 
 
-typedef struct CPeksSecretKey {
-  char *ptr;
-} CPeksSecretKey;
-
 typedef struct CPeksCiphertext {
   char *ptr;
 } CPeksCiphertext;
@@ -19,11 +15,13 @@ typedef struct CPeksPublicKey {
   char *ptr;
 } CPeksPublicKey;
 
+typedef struct CPeksSecretKey {
+  char *ptr;
+} CPeksSecretKey;
+
 typedef struct CPeksTrapdoor {
   char *ptr;
 } CPeksTrapdoor;
-
-struct CPeksSecretKey gen_secret_key(void);
 
 struct CPeksCiphertext peks_encrypt_keyword(const struct CPeksPublicKey *public_key, char *keyword);
 
@@ -37,6 +35,8 @@ void peks_free_trapdoor(struct CPeksTrapdoor trapdoor);
 
 struct CPeksPublicKey peks_gen_public_key(const struct CPeksSecretKey *secret_key);
 
+struct CPeksSecretKey peks_gen_secret_key(void);
+
 struct CPeksTrapdoor peks_gen_trapdoor(const struct CPeksSecretKey *secret_key, char *keyword);
 
-bool peks_test(struct CPeksCiphertext ciphertext, struct CPeksTrapdoor trapdoor);
+int peks_test(struct CPeksCiphertext ciphertext, struct CPeksTrapdoor trapdoor);
