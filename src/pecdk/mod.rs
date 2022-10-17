@@ -308,31 +308,165 @@ mod test {
     use rand_xorshift::XorShiftRng;
 
     #[test]
-    fn test_pecdk_valid_case_and_or() {
+    fn test_pecdk_valid_case_and() {
         let mut rng = <XorShiftRng as SeedableRng>::from_seed([
             0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06,
             0xbc, 0xe5,
         ]);
         let n = 70;
-        let secret_key = SecretKey::<Bls12>::gen(&mut rng, n);
-        let public_key = secret_key.into_public_key(&mut rng);
         let mut thread_rng = thread_rng();
         let mut keywords = Vec::with_capacity(n);
         for _ in 0..n {
             let keyword = (0..16).map(|_| thread_rng.gen()).collect::<Vec<u8>>();
             keywords.push(keyword);
         }
-        let ct = public_key
-            .encrypt::<_, Fr>(keywords.clone(), &mut rng)
-            .unwrap();
         let m = 70;
-        let trapdoor_and = secret_key
-            .gen_trapdoor::<_, Fr>(keywords[0..m].to_vec(), SearchSym::AND, &mut rng)
+        assert_eq!(
+            test_generic(
+                keywords.clone(),
+                keywords[0..m].to_vec(),
+                SearchSym::AND,
+                &mut rng
+            ),
+            true
+        );
+    }
+
+    #[test]
+    fn test_pecdk_valid_case_or() {
+        let mut rng = <XorShiftRng as SeedableRng>::from_seed([
+            0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06,
+            0xbc, 0xe5,
+        ]);
+        let n = 70;
+        let mut thread_rng = thread_rng();
+        let mut keywords = Vec::with_capacity(n);
+        for _ in 0..n {
+            let keyword = (0..16).map(|_| thread_rng.gen()).collect::<Vec<u8>>();
+            keywords.push(keyword);
+        }
+        let m = 70;
+        assert_eq!(
+            test_generic(
+                keywords.clone(),
+                keywords[0..m].to_vec(),
+                SearchSym::OR,
+                &mut rng
+            ),
+            true
+        );
+    }
+
+    #[test]
+    fn test_pecdk_invalid_case_and() {
+        let mut rng = <XorShiftRng as SeedableRng>::from_seed([
+            0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06,
+            0xbc, 0xe5,
+        ]);
+        let n = 70;
+        let mut thread_rng = thread_rng();
+        let mut keywords = Vec::with_capacity(n);
+        for _ in 0..n {
+            let keyword = (0..16).map(|_| thread_rng.gen()).collect::<Vec<u8>>();
+            keywords.push(keyword);
+        }
+        let m = 70;
+        let mut invalid_keywords = keywords[0..m].to_vec();
+        invalid_keywords.push(vec![0, 1, 2]);
+        assert_eq!(
+            test_generic(keywords, invalid_keywords, SearchSym::AND, &mut rng),
+            false
+        );
+    }
+
+    #[test]
+    fn test_pecdk_invalid_case_or() {
+        let mut rng = <XorShiftRng as SeedableRng>::from_seed([
+            0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06,
+            0xbc, 0xe5,
+        ]);
+        let n = 70;
+        let mut thread_rng = thread_rng();
+        let mut keywords = Vec::with_capacity(n);
+        for _ in 0..n {
+            let keyword = (0..16).map(|_| thread_rng.gen()).collect::<Vec<u8>>();
+            keywords.push(keyword);
+        }
+        let m = 70;
+        let mut invalid_keywords = Vec::with_capacity(m);
+        for _ in 0..m {
+            let keyword = (0..16).map(|_| thread_rng.gen()).collect::<Vec<u8>>();
+            invalid_keywords.push(keyword);
+        }
+        assert_eq!(
+            test_generic(keywords, invalid_keywords, SearchSym::OR, &mut rng),
+            false
+        );
+    }
+
+    #[test]
+    fn test_pecdk_large_case_and() {
+        let mut rng = <XorShiftRng as SeedableRng>::from_seed([
+            0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06,
+            0xbc, 0xe5,
+        ]);
+        let n = 400;
+        let mut thread_rng = thread_rng();
+        let mut keywords = Vec::with_capacity(n);
+        for _ in 0..n {
+            let keyword = (0..16).map(|_| thread_rng.gen()).collect::<Vec<u8>>();
+            keywords.push(keyword);
+        }
+        let m = 400;
+        assert_eq!(
+            test_generic(
+                keywords.clone(),
+                keywords[0..m].to_vec(),
+                SearchSym::AND,
+                &mut rng
+            ),
+            true
+        );
+    }
+
+    #[test]
+    fn test_pecdk_large_case_or() {
+        let mut rng = <XorShiftRng as SeedableRng>::from_seed([
+            0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06,
+            0xbc, 0xe5,
+        ]);
+        let n = 400;
+        let mut thread_rng = thread_rng();
+        let mut keywords = Vec::with_capacity(n);
+        for _ in 0..n {
+            let keyword = (0..16).map(|_| thread_rng.gen()).collect::<Vec<u8>>();
+            keywords.push(keyword);
+        }
+        let m = 400;
+        assert_eq!(
+            test_generic(
+                keywords.clone(),
+                keywords[0..m].to_vec(),
+                SearchSym::OR,
+                &mut rng
+            ),
+            true
+        );
+    }
+
+    fn test_generic<R: RngCore>(
+        ct_keywords: Vec<Vec<u8>>,
+        td_keywords: Vec<Vec<u8>>,
+        sym: SearchSym,
+        mut rng: R,
+    ) -> bool {
+        let n = ct_keywords.len();
+        let secret_key = SecretKey::<Bls12>::gen(&mut rng, n);
+        let public_key = secret_key.into_public_key(&mut rng);
+        let ct = public_key.encrypt::<_, Fr>(ct_keywords, &mut rng).unwrap();
+        let trapdoor = secret_key
+            .gen_trapdoor::<_, Fr>(td_keywords, sym, &mut rng)
             .unwrap();
-        assert_eq!(trapdoor_and.test(&ct, &mut rng).unwrap(), true);
-        /*let trapdoor_or = secret_key
-            .gen_trapdoor::<_, Fr>(keywords[0..m].to_vec(), SearchSym::OR, &mut rng)
-            .unwrap();
-        assert_eq!(trapdoor_or.test(&ct, &mut rng).unwrap(), true);*/
+        trapdoor.test(&ct, &mut rng).unwrap()
     }
 }
