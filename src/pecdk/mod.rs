@@ -39,7 +39,7 @@ pub struct Ciphertext<E: Engine> {
     a_points: Vec<Vec<E::G2Affine>>,
     b_points: Vec<Vec<E::G2Affine>>,
     c_points: Vec<E::G2Affine>,
-    d_scalars: Vec<E::Fqk>,
+    d_bytes: Vec<Vec<u8>>,
 }
 
 #[derive(Debug, Clone)]
@@ -217,11 +217,15 @@ impl<E: Engine> PublicKey<E> {
             .into_par_iter()
             .map(|i| self.mue.pow(rs[i].into_repr()))
             .collect::<Vec<E::Fqk>>();
+        let mut d_bytes = Vec::with_capacity(n);
+        for scalar in d_scalars.into_iter() {
+            d_bytes.push(hash_field2bytes::<E>(scalar)?);
+        }
         Ok(Ciphertext {
             a_points,
             b_points,
             c_points,
-            d_scalars,
+            d_bytes,
         })
     }
 }
@@ -260,36 +264,31 @@ impl<E: Engine> Trapdoor<E> {
                 val.inverse().ok_or(PECDKError::<E>::InverseFqkError(val))
             })
             .collect::<Result<Vec<E::Fqk>, PECDKError<E>>>()?;
-        let test_scalars_without_exp = test1s
+        let test_scalars = test1s
             .into_par_iter()
             .zip(test2_invs)
             .map(|(test1, test2_inv)| {
                 let mut val = test1;
                 val.mul_assign(&test2_inv);
-                val
-                //hash_field2bytes::<E>(val)
+                E::final_exponentiation(&val).unwrap()
             })
             .collect::<Vec<E::Fqk>>();
         match self.sym {
             SearchSym::AND => {
-                let r = E::Fr::random(rng);
-                let mut coeff = E::Fr::one();
-                let mut left = E::Fqk::one();
-                let mut right = E::Fqk::one();
+                let mut sum_valid = 0;
                 for i in 0..n {
-                    let l_val = test_scalars_without_exp[i].pow(coeff.into_repr());
-                    left.mul_assign(&l_val);
-                    let r_val = ct.d_scalars[i].pow(coeff.into_repr());
-                    right.mul_assign(&r_val);
-                    coeff.mul_assign(&r);
+                    let left = &hash_field2bytes::<E>(test_scalars[i])?;
+                    let right = &ct.d_bytes[i];
+                    if left == right {
+                        sum_valid += 1;
+                    }
                 }
-                left = E::final_exponentiation(&left).unwrap();
-                Ok(left == right)
+                Ok(sum_valid == m)
             }
             SearchSym::OR => {
                 for i in 0..n {
-                    let left = E::final_exponentiation(&test_scalars_without_exp[i]).unwrap();
-                    let right = ct.d_scalars[i];
+                    let left = &hash_field2bytes::<E>(test_scalars[i])?;
+                    let right = &ct.d_bytes[i];
                     if left == right {
                         return Ok(true);
                     }
@@ -314,7 +313,7 @@ mod test {
             0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06,
             0xbc, 0xe5,
         ]);
-        let n = 16;
+        let n = 70;
         let secret_key = SecretKey::<Bls12>::gen(&mut rng, n);
         let public_key = secret_key.into_public_key(&mut rng);
         let mut thread_rng = thread_rng();
@@ -326,14 +325,14 @@ mod test {
         let ct = public_key
             .encrypt::<_, Fr>(keywords.clone(), &mut rng)
             .unwrap();
-
+        let m = 70;
         let trapdoor_and = secret_key
-            .gen_trapdoor::<_, Fr>(keywords.clone(), SearchSym::AND, &mut rng)
+            .gen_trapdoor::<_, Fr>(keywords[0..m].to_vec(), SearchSym::AND, &mut rng)
             .unwrap();
         assert_eq!(trapdoor_and.test(&ct, &mut rng).unwrap(), true);
-        let trapdoor_or = secret_key
-            .gen_trapdoor::<_, Fr>(keywords, SearchSym::OR, &mut rng)
+        /*let trapdoor_or = secret_key
+            .gen_trapdoor::<_, Fr>(keywords[0..m].to_vec(), SearchSym::OR, &mut rng)
             .unwrap();
-        assert_eq!(trapdoor_or.test(&ct, &mut rng).unwrap(), true);
+        assert_eq!(trapdoor_or.test(&ct, &mut rng).unwrap(), true);*/
     }
 }

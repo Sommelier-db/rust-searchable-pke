@@ -1,35 +1,142 @@
 use fff::PrimeField;
-use itertools::Itertools;
+use rayon::prelude::*;
+
+/// References
+/// 1. [vitalik's python implementation of ZK-STARK](https://github.com/ethereum/research/blob/master/mimc_stark/poly_utils.py)
+/// 2. [hrmk1o3's Rust implementation of ZK-STARK](https://github.com/InternetMaximalism/stark-pure-rust/blob/develop/packages/fri/src/poly_utils.rs)
 
 pub(crate) fn polynomial_from_roots<F: PrimeField>(roots: &[F]) -> Vec<F> {
-    let m = roots.len();
-    let log_m = (m as f64).log2() as u32;
-    assert!(log_m <= F::S);
-    let zero = F::zero();
-    let one = F::one();
-    let mut minus_one = zero.clone();
-    minus_one.sub_assign(&one);
+    let m = roots.len() + 1;
 
-    let mut coefficients: Vec<F> = Vec::with_capacity(m);
-    let mut minus_one_powed = one;
-    for k in 0..m {
-        let mut sum = zero.clone();
-        for comb in (0..m).combinations(k + 1) {
-            let mut term = one.clone();
-            for i in comb.into_iter() {
-                term.mul_assign(&roots[i]);
-            }
-            sum.add_assign(&term);
+    let xs = (0..m).fold(Vec::with_capacity(m), |mut vec, i| {
+        if i == 0 {
+            vec.push(F::zero());
+        } else {
+            let mut v = vec[i - 1].clone();
+            v.add_assign(&F::one());
+            vec.push(v);
         }
-        minus_one_powed.mul_assign(&minus_one);
-        sum.mul_assign(&minus_one_powed);
-        coefficients.push(sum);
-    }
-    coefficients.reverse();
-    coefficients.push(one);
+        vec
+    });
+    let root_poly = zpoly(&xs);
+    let numerator_polys = xs
+        .par_iter()
+        .map(|x| {
+            let mut minus_x = F::zero();
+            minus_x.sub_assign(x);
+            div_polys(&root_poly, &[minus_x, F::one()])
+        })
+        .collect::<Vec<Vec<F>>>();
+    let denominators = (0..m)
+        .into_par_iter()
+        .map(|i| eval_poly_at(&numerator_polys[i], xs[i]))
+        .collect::<Vec<F>>();
+    let inv_denoms = multi_inv(&denominators);
 
-    assert_eq!(coefficients.len(), m + 1);
+    let ys = (0..m)
+        .into_par_iter()
+        .map(|i| {
+            let mut y = F::one();
+            for j in 0..(m - 1) {
+                let mut factor = xs[i].clone();
+                factor.sub_assign(&roots[j]);
+                y.mul_assign(&factor);
+            }
+            y
+        })
+        .collect::<Vec<F>>();
+
+    let mut coefficients = vec![F::zero(); m];
+    for i in 0..m {
+        let mut yslice = ys[i];
+        yslice.mul_assign(&inv_denoms[i]);
+        for j in 0..m {
+            let mut term = numerator_polys[i][j].clone();
+            term.mul_assign(&yslice);
+            coefficients[j].add_assign(&term);
+        }
+    }
     coefficients
+}
+
+fn eval_poly_at<F: PrimeField>(coeffs: &[F], x: F) -> F {
+    let mut result = F::zero();
+    let mut base = F::one();
+    for coeff in coeffs.iter() {
+        let mut term = coeff.clone();
+        term.mul_assign(&base);
+        result.add_assign(&term);
+        base.mul_assign(&x);
+    }
+    result
+}
+
+// Original: https://github.com/InternetMaximalism/stark-pure-rust/blob/develop/packages/fri/src/poly_utils.rs#L362
+fn zpoly<F: PrimeField>(xs: &[F]) -> Vec<F> {
+    let mut root = vec![F::one()];
+    for i in 0..xs.len() {
+        root.push(F::zero());
+        for j in (0..(i + 1)).rev() {
+            let mut term = root[j];
+            term.mul_assign(&xs[i]);
+            root[j + 1].sub_assign(&term);
+        }
+    }
+    root.reverse();
+    root
+}
+
+fn div_polys<F: PrimeField>(a: &[F], b: &[F]) -> Vec<F> {
+    assert!(a.len() >= b.len());
+    let mut a = a.into_iter().map(|v| v.clone()).collect::<Vec<F>>();
+    let mut outputs = Vec::new();
+    let mut apos = a.len() - 1;
+    let bpos = b.len() - 1;
+    let diff = apos - bpos;
+    for d in (0..(diff + 1)).rev() {
+        let mut quot = a[apos].clone();
+        quot.mul_assign(&b[bpos].inverse().unwrap());
+        outputs.push(quot);
+        for i in (0..bpos + 1).rev() {
+            let mut term = b[i].clone();
+            term.mul_assign(&quot);
+            a[d + i].sub_assign(&term);
+        }
+        apos -= 1;
+    }
+    outputs.reverse();
+    outputs
+}
+
+fn multi_inv<F: PrimeField>(values: &[F]) -> Vec<F> {
+    let mut partials = vec![F::one()];
+    for i in 0..values.len() {
+        let mut v = partials[partials.len() - 1].clone();
+        if values[i] != F::zero() {
+            v.mul_assign(&values[i]);
+        } else {
+            v.mul_assign(&F::one());
+        }
+        partials.push(v)
+    }
+    let mut inv = partials[partials.len() - 1].inverse().unwrap();
+    let mut outputs = vec![F::zero(); values.len()];
+    for i in (0..values.len()).rev() {
+        let mut v = partials[i].clone();
+        outputs[i] = if values[i] != F::zero() {
+            v.mul_assign(&inv);
+            v
+        } else {
+            v.mul_assign(&F::zero());
+            v
+        };
+        if values[i] != F::zero() {
+            inv.mul_assign(&values[i]);
+        } else {
+            inv.mul_assign(&F::one());
+        };
+    }
+    outputs
 }
 
 #[cfg(test)]
@@ -51,11 +158,11 @@ mod test {
         let coeffs = polynomial_from_roots(&roots);
         for root in roots.iter() {
             let mut sum = Fr::zero();
-            let mut base = one.clone();
-            for i in 0..2 {
-                let mut coefficient = coeffs[i].clone();
-                coefficient.mul_assign(&base);
-                sum.add_assign(&coefficient);
+            let mut base = Fr::one();
+            for coeff in coeffs.iter() {
+                let mut v = coeff.clone();
+                v.mul_assign(&base);
+                sum.add_assign(&v);
                 base.mul_assign(root);
             }
             assert_eq!(sum, Fr::zero());
@@ -71,15 +178,14 @@ mod test {
         let one = Fr::random(&mut rng);
         let two = Fr::random(&mut rng);
         let roots = vec![one, two];
-        let n = roots.len();
         let coeffs = polynomial_from_roots(&roots);
         for root in roots.iter() {
             let mut sum = Fr::zero();
             let mut base = Fr::one();
-            for i in 0..(n + 1) {
-                let mut coefficient = coeffs[i].clone();
-                coefficient.mul_assign(&base);
-                sum.add_assign(&coefficient);
+            for coeff in coeffs.iter() {
+                let mut v = coeff.clone();
+                v.mul_assign(&base);
+                sum.add_assign(&v);
                 base.mul_assign(root);
             }
             assert_eq!(sum, Fr::zero());
@@ -98,10 +204,10 @@ mod test {
         for root in roots.iter() {
             let mut sum = Fr::zero();
             let mut base = Fr::one();
-            for i in 0..(n + 1) {
-                let mut coefficient = coeffs[i].clone();
-                coefficient.mul_assign(&base);
-                sum.add_assign(&coefficient);
+            for coeff in coeffs.iter() {
+                let mut v = coeff.clone();
+                v.mul_assign(&base);
+                sum.add_assign(&v);
                 base.mul_assign(root);
             }
             assert_eq!(sum, Fr::zero());
