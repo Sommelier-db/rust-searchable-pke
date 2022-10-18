@@ -83,6 +83,10 @@ impl<E: Engine> SecretKey<E> {
         }
     }
 
+    pub fn num_keyword(&self) -> usize {
+        self.alphas.len() - 1
+    }
+
     pub fn into_public_key<R: RngCore>(&self, rng: &mut R) -> PublicKey<E> {
         let g2 = <E::G2 as CurveProjective>::random(rng).into_affine();
         let x_points = self

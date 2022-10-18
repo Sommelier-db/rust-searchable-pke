@@ -1,6 +1,7 @@
-mod like;
+mod prefix;
 mod range;
-pub use like::*;
+mod utils;
+pub use prefix::*;
 pub use range::*;
 
 use crate::pecdk::PECDKError;
@@ -12,6 +13,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ExpError<E: Engine> {
+    #[error("The number of given keywords is {0}, but the max number is {1}")]
+    ExcessiveNumberOfKeywords(usize, usize),
     #[error(transparent)]
     PECDKError(#[from] PECDKError<E>),
 }
