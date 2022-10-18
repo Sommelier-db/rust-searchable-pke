@@ -1,6 +1,8 @@
+mod fields_and_or;
 mod prefix;
 mod range;
 mod utils;
+pub use fields_and_or::*;
 pub use prefix::*;
 pub use range::*;
 

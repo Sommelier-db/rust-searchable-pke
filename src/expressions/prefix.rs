@@ -137,7 +137,7 @@ mod test {
         let n = 5;
         let secret_key = SecretKey::<Bls12>::gen(&mut rng, n);
         let public_key = secret_key.into_public_key(&mut rng);
-        let region_name = "test_valid_prefix_case_simple";
+        let region_name = "test_invalid_prefix_case_simple";
         let string = "abcde";
         let ct = gen_ciphertext_for_prefix_search::<_, Fr, _>(
             &public_key,
@@ -163,7 +163,7 @@ mod test {
         let n = string.len();
         let secret_key = SecretKey::<Bls12>::gen(&mut rng, n);
         let public_key = secret_key.into_public_key(&mut rng);
-        let region_name = "test_valid_prefix_case_non_ascii";
+        let region_name = "test_invalid_prefix_case_non_ascii";
         let ct = gen_ciphertext_for_prefix_search::<_, Fr, _>(
             &public_key,
             region_name,
