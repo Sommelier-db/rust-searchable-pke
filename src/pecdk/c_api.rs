@@ -69,7 +69,6 @@ pub extern "C" fn pecdk_gen_public_key(secret_key: CPecdkSecretKey) -> CPecdkPub
 pub extern "C" fn pecdk_encrypt_keyword(
     public_key: CPecdkPublicKey,
     keywords: *mut *mut c_char,
-    num_keyword: c_int,
 ) -> CPecdkCiphertext {
     let mut rng = OsRng;
     let pk = match serde_json::from_str::<PublicKey<Bls12>>(&ptr2str(public_key.ptr)) {
@@ -81,7 +80,7 @@ pub extern "C" fn pecdk_encrypt_keyword(
             };
         }
     };
-    let num_keyword = num_keyword as usize;
+    let num_keyword = pk.num_keyword();
     let keyword_slice = unsafe { slice::from_raw_parts(keywords, num_keyword) };
     let keywords = keyword_slice
         .into_iter()

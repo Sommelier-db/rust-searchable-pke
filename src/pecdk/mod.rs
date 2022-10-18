@@ -171,6 +171,10 @@ impl<E: Engine> SecretKey<E> {
 }
 
 impl<E: Engine> PublicKey<E> {
+    pub fn num_keyword(&self) -> usize {
+        self.x_points.len() - 1
+    }
+
     pub fn from_secret_key<R: RngCore>(secret_key: &SecretKey<E>, rng: &mut R) -> Self {
         secret_key.into_public_key(rng)
     }
