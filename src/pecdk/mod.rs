@@ -1,10 +1,14 @@
+mod c_api;
 use crate::utils::polynomial_from_roots;
 use crate::{hashes::*, BaseROFr};
+pub use c_api::*;
 use fff::{Field, PrimeField};
 use groupy::{CurveAffine, CurveProjective};
 use paired::{Engine, PairingCurveAffine};
 use rand_core::RngCore;
 use rayon::prelude::*;
+use serde::ser::*;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -17,7 +21,7 @@ pub enum PECDKError<E: Engine> {
     ECHashError(#[from] ECHashError),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SecretKey<E: Engine> {
     alphas: Vec<E::Fr>,
     betas: Vec<E::Fr>,
@@ -25,7 +29,7 @@ pub struct SecretKey<E: Engine> {
     g1: E::G1Affine,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PublicKey<E: Engine> {
     g2: E::G2Affine,
     x_points: Vec<E::G2Affine>,
@@ -34,7 +38,8 @@ pub struct PublicKey<E: Engine> {
     mue: E::Fqk,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(bound(deserialize = "'de: 'static"))]
 pub struct Ciphertext<E: Engine> {
     a_points: Vec<Vec<E::G2Affine>>,
     b_points: Vec<Vec<E::G2Affine>>,
@@ -42,7 +47,8 @@ pub struct Ciphertext<E: Engine> {
     d_bytes: Vec<Vec<u8>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(bound(deserialize = "'de: 'static"))]
 pub struct Trapdoor<E: Engine> {
     t1s: Vec<E::G1Affine>,
     t2s: Vec<E::G1Affine>,
@@ -50,7 +56,7 @@ pub struct Trapdoor<E: Engine> {
     sym: SearchSym,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SearchSym {
     AND,
     OR,
@@ -231,7 +237,7 @@ impl<E: Engine> PublicKey<E> {
 }
 
 impl<E: Engine> Trapdoor<E> {
-    pub fn test<R: RngCore>(&self, ct: &Ciphertext<E>, rng: &mut R) -> Result<bool, PECDKError<E>> {
+    pub fn test(&self, ct: &Ciphertext<E>) -> Result<bool, PECDKError<E>> {
         let n = ct.c_points.len();
         let m = self.t1s.len() - 1;
         let test1s = (0..n)
@@ -370,7 +376,7 @@ mod test {
             let keyword = (0..16).map(|_| thread_rng.gen()).collect::<Vec<u8>>();
             keywords.push(keyword);
         }
-        let m = 70;
+        let m = 69;
         let mut invalid_keywords = keywords[0..m].to_vec();
         invalid_keywords.push(vec![0, 1, 2]);
         assert_eq!(
@@ -467,6 +473,6 @@ mod test {
         let trapdoor = secret_key
             .gen_trapdoor::<_, Fr>(td_keywords, sym, &mut rng)
             .unwrap();
-        trapdoor.test(&ct, &mut rng).unwrap()
+        trapdoor.test(&ct).unwrap()
     }
 }

@@ -1,15 +1,10 @@
 use crate::c_utils::*;
 use crate::peks::*;
-use errno::{errno, set_errno, Errno};
+use errno::{set_errno, Errno};
 use paired::bls12_381::Bls12;
 use rand_core::OsRng;
-use std::ffi::*;
-use std::marker::PhantomData;
-use std::mem;
 use std::os::raw::c_char;
 use std::os::raw::c_int;
-use std::slice;
-use std::str::FromStr;
 
 #[repr(C)]
 #[derive(Debug, Clone)]
