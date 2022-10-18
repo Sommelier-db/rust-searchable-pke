@@ -6,7 +6,7 @@ pub(crate) fn str2ptr(str: String) -> *mut c_char {
     c_str.into_raw()
 }
 
-pub(crate) fn ptr2str<'a>(ptr: *const c_char) -> &'a str {
+pub(crate) fn ptr2str<'a>(ptr: *mut c_char) -> &'a str {
     let cstr = unsafe { CStr::from_ptr(ptr) };
     cstr.to_str().unwrap()
 }

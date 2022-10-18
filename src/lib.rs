@@ -1,4 +1,5 @@
 mod c_utils;
+pub mod expressions;
 mod hashes;
 pub mod pecdk;
 pub mod peks;

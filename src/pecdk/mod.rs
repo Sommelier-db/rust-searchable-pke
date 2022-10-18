@@ -8,7 +8,6 @@ use paired::{Engine, PairingCurveAffine};
 use rand::seq::SliceRandom;
 use rand_core::RngCore;
 use rayon::prelude::*;
-use serde::ser::*;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -423,14 +422,14 @@ mod test {
             0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06,
             0xbc, 0xe5,
         ]);
-        let n = 400;
+        let n = 256;
         let mut thread_rng = thread_rng();
         let mut keywords = Vec::with_capacity(n);
         for _ in 0..n {
             let keyword = (0..16).map(|_| thread_rng.gen()).collect::<Vec<u8>>();
             keywords.push(keyword);
         }
-        let m = 400;
+        let m = 256;
         assert_eq!(
             test_generic(
                 keywords.clone(),
@@ -448,14 +447,14 @@ mod test {
             0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06,
             0xbc, 0xe5,
         ]);
-        let n = 400;
+        let n = 256;
         let mut thread_rng = thread_rng();
         let mut keywords = Vec::with_capacity(n);
         for _ in 0..n {
             let keyword = (0..16).map(|_| thread_rng.gen()).collect::<Vec<u8>>();
             keywords.push(keyword);
         }
-        let m = 400;
+        let m = 256;
         assert_eq!(
             test_generic(
                 keywords.clone(),

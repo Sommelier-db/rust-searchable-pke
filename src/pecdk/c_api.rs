@@ -68,7 +68,7 @@ pub extern "C" fn pecdk_gen_public_key(secret_key: &CPecdkSecretKey) -> CPecdkPu
 #[no_mangle]
 pub extern "C" fn pecdk_encrypt_keyword(
     public_key: &CPecdkPublicKey,
-    keywords: *const c_char,
+    keywords: *mut *mut c_char,
     num_keyword: c_int,
 ) -> CPecdkCiphertext {
     let mut rng = OsRng;
@@ -84,8 +84,8 @@ pub extern "C" fn pecdk_encrypt_keyword(
     let num_keyword = num_keyword as usize;
     let keyword_slice = unsafe { slice::from_raw_parts(keywords, num_keyword) };
     let keywords = keyword_slice
-        .iter()
-        .map(|keyword| ptr2str(keyword).as_bytes().to_vec())
+        .into_iter()
+        .map(|keyword| ptr2str(*keyword).as_bytes().to_vec())
         .collect::<Vec<Vec<u8>>>();
     let ct = pk
         .encrypt::<OsRng, Fr>(keywords, &mut rng)
@@ -100,7 +100,7 @@ pub extern "C" fn pecdk_encrypt_keyword(
 #[no_mangle]
 pub extern "C" fn pecdk_gen_trapdoor(
     secret_key: &CPecdkSecretKey,
-    keywords: *const c_char,
+    keywords: *mut *mut c_char,
     num_keyword: c_int,
     sym: c_int,
 ) -> CPecdkTrapdoor {
@@ -123,8 +123,8 @@ pub extern "C" fn pecdk_gen_trapdoor(
     let num_keyword = num_keyword as usize;
     let keyword_slice = unsafe { slice::from_raw_parts(keywords, num_keyword) };
     let keywords = keyword_slice
-        .iter()
-        .map(|keyword| ptr2str(keyword).as_bytes().to_vec())
+        .into_iter()
+        .map(|keyword| ptr2str(*keyword).as_bytes().to_vec())
         .collect::<Vec<Vec<u8>>>();
     let sym = match sym {
         0 => SearchSym::AND,

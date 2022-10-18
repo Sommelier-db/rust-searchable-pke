@@ -40,7 +40,7 @@ typedef struct CPeksTrapdoor {
 } CPeksTrapdoor;
 
 struct CPecdkCiphertext pecdk_encrypt_keyword(const struct CPecdkPublicKey *public_key,
-                                              const char *keywords,
+                                              char **keywords,
                                               int num_keyword);
 
 void pecdk_free_ciphertext(struct CPecdkCiphertext ciphertext);
@@ -56,7 +56,7 @@ struct CPecdkPublicKey pecdk_gen_public_key(const struct CPecdkSecretKey *secret
 struct CPecdkSecretKey pecdk_gen_secret_key(int num_keyword);
 
 struct CPecdkTrapdoor pecdk_gen_trapdoor(const struct CPecdkSecretKey *secret_key,
-                                         const char *keywords,
+                                         char **keywords,
                                          int num_keyword,
                                          int sym);
 
