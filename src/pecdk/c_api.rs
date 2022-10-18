@@ -46,7 +46,7 @@ pub extern "C" fn pecdk_gen_secret_key(num_keyword: c_int) -> CPecdkSecretKey {
 }
 
 #[no_mangle]
-pub extern "C" fn pecdk_gen_public_key(secret_key: &CPecdkSecretKey) -> CPecdkPublicKey {
+pub extern "C" fn pecdk_gen_public_key(secret_key: CPecdkSecretKey) -> CPecdkPublicKey {
     let mut rng = OsRng;
     let sk = match serde_json::from_str::<SecretKey<Bls12>>(&ptr2str(secret_key.ptr)) {
         Ok(sk) => sk,
@@ -67,7 +67,7 @@ pub extern "C" fn pecdk_gen_public_key(secret_key: &CPecdkSecretKey) -> CPecdkPu
 
 #[no_mangle]
 pub extern "C" fn pecdk_encrypt_keyword(
-    public_key: &CPecdkPublicKey,
+    public_key: CPecdkPublicKey,
     keywords: *mut *mut c_char,
     num_keyword: c_int,
 ) -> CPecdkCiphertext {
@@ -99,7 +99,7 @@ pub extern "C" fn pecdk_encrypt_keyword(
 
 #[no_mangle]
 pub extern "C" fn pecdk_gen_trapdoor(
-    secret_key: &CPecdkSecretKey,
+    secret_key: CPecdkSecretKey,
     keywords: *mut *mut c_char,
     num_keyword: c_int,
     sym: c_int,
