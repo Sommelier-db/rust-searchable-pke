@@ -5,6 +5,7 @@ pub use c_api::*;
 use fff::{Field, PrimeField};
 use groupy::{CurveAffine, CurveProjective};
 use paired::{Engine, PairingCurveAffine};
+use rand::seq::SliceRandom;
 use rand_core::RngCore;
 use rayon::prelude::*;
 use serde::ser::*;
@@ -120,6 +121,9 @@ impl<E: Engine> SecretKey<E> {
         let mut minus_one = zero.clone();
         minus_one.sub_assign(&one);
 
+        let mut keywords = keywords;
+        keywords.shuffle(rng);
+
         let hashes = keywords
             .into_par_iter()
             .map(|word| hash_bytes2field::<F, E>(&word, TAG.as_bytes()))
@@ -179,6 +183,9 @@ impl<E: Engine> PublicKey<E> {
     ) -> Result<Ciphertext<E>, PECDKError<E>> {
         let n = self.x_points.len() - 1;
         assert_eq!(keywords.len(), n);
+        let mut keywords = keywords;
+        keywords.shuffle(rng);
+
         let rs = (0..n)
             .map(|_| <E::Fr as Field>::random(rng))
             .collect::<Vec<E::Fr>>();
