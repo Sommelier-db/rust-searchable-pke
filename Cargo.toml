@@ -21,6 +21,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 errno = "0.2.8"
 rand = "0.7.0"
+multiset = "0.0.5"
 
 [dev-dependencies]
 rand_xorshift = "0.2"
@@ -28,6 +29,3 @@ rand_xorshift = "0.2"
 
 [lib]
 crate-type = ["cdylib","staticlib"]
-
-[profile.test]
-opt-level = 3
