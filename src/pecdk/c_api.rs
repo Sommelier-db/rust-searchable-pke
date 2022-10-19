@@ -5,38 +5,37 @@ use errno::{set_errno, Errno};
 use paired::bls12_381::{Bls12, Fr};
 use rand_core::OsRng;
 use std::os::raw::c_char;
-use std::os::raw::c_int;
+use std::os::raw::{c_int, c_uint};
 
 #[repr(C)]
 #[derive(Debug, Clone)]
 pub struct CPecdkSecretKey {
-    ptr: *mut c_char,
+    pub(crate) ptr: *mut c_char,
 }
 
 #[repr(C)]
 #[derive(Debug, Clone)]
 pub struct CPecdkPublicKey {
-    ptr: *mut c_char,
+    pub(crate) ptr: *mut c_char,
 }
 
 #[repr(C)]
 #[derive(Debug, Clone)]
 pub struct CPecdkCiphertext {
-    ptr: *mut c_char,
+    pub(crate) ptr: *mut c_char,
 }
 
 #[repr(C)]
 #[derive(Debug, Clone)]
 pub struct CPecdkTrapdoor {
-    ptr: *mut c_char,
+    pub(crate) ptr: *mut c_char,
 }
 
-const EINVAL: i32 = 22;
+pub(crate) const EINVAL: i32 = 22;
 
 #[no_mangle]
-pub extern "C" fn pecdk_gen_secret_key(num_keyword: c_int) -> CPecdkSecretKey {
+pub extern "C" fn pecdk_gen_secret_key(num_keyword: c_uint) -> CPecdkSecretKey {
     let mut rng = OsRng;
-    assert!(num_keyword >= 0);
     let sk = SecretKey::<Bls12>::gen(&mut rng, num_keyword as usize);
     let sk_str = serde_json::to_string(&sk)
         .expect("Fail to convert a secret key to a string in pecdk_gen_secret_key");
@@ -100,7 +99,7 @@ pub extern "C" fn pecdk_encrypt_keyword(
 pub extern "C" fn pecdk_gen_trapdoor(
     secret_key: CPecdkSecretKey,
     keywords: *mut *mut c_char,
-    num_keyword: c_int,
+    num_keyword: c_uint,
     sym: c_int,
 ) -> CPecdkTrapdoor {
     let mut rng = OsRng;
@@ -113,13 +112,15 @@ pub extern "C" fn pecdk_gen_trapdoor(
             };
         }
     };
-    if num_keyword < 0 {
-        set_errno(Errno(EINVAL));
-        return CPecdkTrapdoor {
-            ptr: str2ptr(String::new()),
-        };
-    }
-    let num_keyword = num_keyword as usize;
+    let num_keyword = match num_keyword.try_into() {
+        Ok(num) => num,
+        Err(_) => {
+            set_errno(Errno(EINVAL));
+            return CPecdkTrapdoor {
+                ptr: str2ptr(String::new()),
+            };
+        }
+    };
     let keyword_slice = unsafe { slice::from_raw_parts(keywords, num_keyword) };
     let keywords = keyword_slice
         .into_iter()

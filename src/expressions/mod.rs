@@ -1,15 +1,15 @@
+mod c_api;
 mod fields_and_or;
 mod prefix;
 mod range;
 mod utils;
+pub use c_api::*;
 pub use fields_and_or::*;
 pub use prefix::*;
 pub use range::*;
 
 use crate::pecdk::PECDKError;
-use fff::{Field, PrimeField};
-use groupy::{CurveAffine, CurveProjective};
-use paired::{Engine, PairingCurveAffine};
+use paired::Engine;
 
 use thiserror::Error;
 

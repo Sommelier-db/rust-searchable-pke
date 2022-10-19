@@ -7,22 +7,35 @@ use crate::BaseROFr;
 use paired::Engine;
 use rand_core::RngCore;
 
-pub fn gen_ciphertext_for_field_and_search<E: Engine, F: BaseROFr<E>, R: RngCore>(
+pub fn gen_ciphertext_for_field_search<E: Engine, F: BaseROFr<E>, R: RngCore>(
     public_key: &PublicKey<E>,
     region_name: &str,
     field_val_map: HashMap<Vec<u8>, Vec<u8>>,
     rng: &mut R,
 ) -> Result<Ciphertext<E>, ExpError<E>> {
-    gen_ciphertext_for_field_search::<E, F, R>(public_key, region_name, field_val_map, rng)
-}
+    let n_bytes = field_val_map.len();
+    let max_bytes = public_key.num_keyword();
+    if n_bytes > max_bytes {
+        return Err(ExpError::ExcessiveNumberOfKeywords(n_bytes, max_bytes));
+    }
+    let n_remaining = max_bytes - n_bytes;
 
-pub fn gen_ciphertext_for_field_or_search<E: Engine, F: BaseROFr<E>, R: RngCore>(
-    public_key: &PublicKey<E>,
-    region_name: &str,
-    field_val_map: HashMap<Vec<u8>, Vec<u8>>,
-    rng: &mut R,
-) -> Result<Ciphertext<E>, ExpError<E>> {
-    gen_ciphertext_for_field_search::<E, F, R>(public_key, region_name, field_val_map, rng)
+    let mut keywords = field_val_map
+        .into_iter()
+        .map(|(field, val)| {
+            concat_multi_bytes(vec![
+                region_name.as_bytes(),
+                &vec![1u8],
+                &field[..],
+                &val[..],
+            ])
+        })
+        .collect::<Vec<Vec<u8>>>();
+    for _ in 0..n_remaining {
+        keywords.push(concat_multi_bytes(vec![region_name.as_bytes(), &vec![0u8]]));
+    }
+    let ct = public_key.encrypt::<R, F>(keywords, rng)?;
+    Ok(ct)
 }
 
 pub fn gen_trapdoor_for_field_and_search<E: Engine, F: BaseROFr<E>, R: RngCore>(
@@ -53,37 +66,6 @@ pub fn gen_trapdoor_for_field_or_search<E: Engine, F: BaseROFr<E>, R: RngCore>(
         SearchSym::OR,
         rng,
     )
-}
-
-fn gen_ciphertext_for_field_search<E: Engine, F: BaseROFr<E>, R: RngCore>(
-    public_key: &PublicKey<E>,
-    region_name: &str,
-    field_val_map: HashMap<Vec<u8>, Vec<u8>>,
-    rng: &mut R,
-) -> Result<Ciphertext<E>, ExpError<E>> {
-    let n_bytes = field_val_map.len();
-    let max_bytes = public_key.num_keyword();
-    if n_bytes > max_bytes {
-        return Err(ExpError::ExcessiveNumberOfKeywords(n_bytes, max_bytes));
-    }
-    let n_remaining = max_bytes - n_bytes;
-
-    let mut keywords = field_val_map
-        .into_iter()
-        .map(|(field, val)| {
-            concat_multi_bytes(vec![
-                region_name.as_bytes(),
-                &vec![1u8],
-                &field[..],
-                &val[..],
-            ])
-        })
-        .collect::<Vec<Vec<u8>>>();
-    for _ in 0..n_remaining {
-        keywords.push(concat_multi_bytes(vec![region_name.as_bytes(), &vec![0u8]]));
-    }
-    let ct = public_key.encrypt::<R, F>(keywords, rng)?;
-    Ok(ct)
 }
 
 fn gen_trapdoor_for_field_search<E: Engine, F: BaseROFr<E>, R: RngCore>(
@@ -140,7 +122,7 @@ mod test {
             let val = (0..16).map(|_| thread_rng.gen()).collect::<Vec<u8>>();
             field_val_map.insert(field, val);
         }
-        let ct = gen_ciphertext_for_field_and_search::<_, Fr, _>(
+        let ct = gen_ciphertext_for_field_search::<_, Fr, _>(
             &public_key,
             region_name,
             field_val_map.clone(),
@@ -174,7 +156,7 @@ mod test {
             let val = (0..16).map(|_| thread_rng.gen()).collect::<Vec<u8>>();
             field_val_map.insert(field, val);
         }
-        let ct = gen_ciphertext_for_field_and_search::<_, Fr, _>(
+        let ct = gen_ciphertext_for_field_search::<_, Fr, _>(
             &public_key,
             region_name,
             field_val_map.clone(),
