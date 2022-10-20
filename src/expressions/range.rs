@@ -58,9 +58,8 @@ pub fn gen_trapdoor_for_range_search<E: Engine, F: BaseROFr<E>, R: RngCore>(
     bit_size: usize,
     rng: &mut R,
 ) -> Result<Trapdoor<E>, ExpError<E>> {
-    let max_keyword_size = compute_max_keyword_size(bit_size);
     let nodes = get_canonical_cover_nodes(min, max, bit_size);
-    let mut keywords = nodes
+    let keywords = nodes
         .into_iter()
         .map(|node| {
             concat_multi_bytes(vec![
@@ -71,14 +70,6 @@ pub fn gen_trapdoor_for_range_search<E: Engine, F: BaseROFr<E>, R: RngCore>(
             ])
         })
         .collect::<Vec<Vec<u8>>>();
-    for _ in 0..(max_keyword_size - keywords.len()) {
-        keywords.push(concat_multi_bytes(vec![
-            region_name.as_bytes(),
-            &vec![0u8],
-            &1u64.to_be_bytes(),
-            &1u64.to_be_bytes(),
-        ]));
-    }
     let td = secret_key.gen_trapdoor::<R, F>(keywords, SearchSym::OR, rng)?;
     Ok(td)
 }
