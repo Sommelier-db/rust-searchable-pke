@@ -86,7 +86,7 @@ pub fn gen_trapdoor_for_range_search<E: Engine, F: BaseROFr<E>, R: RngCore>(
 fn get_canonical_cover_nodes(min: u64, max: u64, bit_size: usize) -> HashSet<Vec<bool>> {
     let n1 = max - min + 1;
     let l = (n1 as f64 + 1.0).log2().floor() as usize;
-    let n2 = n1 - (1 << l) + 1;
+    let n2 = n1 + 1 - (1 << l);
 
     let mut nodes = HashSet::new();
     let mut allowed_lens = HashMultiSet::new();
@@ -208,9 +208,9 @@ mod test {
         let secret_key = SecretKey::<Bls12>::gen(&mut rng, n);
         let public_key = secret_key.into_public_key(&mut rng);
         let region_name = "test_valid_range_case_simple";
-        let min = 0;
-        let max = 19;
-        let val = 12;
+        let min = 10;
+        let max = 30;
+        let val = 20;
         let ct = gen_ciphertext_for_range_search::<_, Fr, _>(
             &public_key,
             region_name,
