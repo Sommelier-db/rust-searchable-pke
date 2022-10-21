@@ -215,6 +215,35 @@ pub extern "C" fn c_gen_trapdoor_for_prefix_search(
 }
 
 #[no_mangle]
+pub extern "C" fn c_gen_trapdoor_for_prefix_search_exact(
+    secret_key: CPecdkSecretKey,
+    region_name: *mut c_char,
+    string: *mut c_char,
+) -> CPecdkTrapdoor {
+    let mut rng = OsRng;
+    let sk = match serde_json::from_str::<SecretKey<Bls12>>(&ptr2str(secret_key.ptr)) {
+        Ok(sk) => sk,
+        Err(_) => {
+            set_errno(Errno(EINVAL));
+            return CPecdkTrapdoor {
+                ptr: str2ptr(String::new()),
+            };
+        }
+    };
+    let region_name = ptr2str(region_name);
+    let string = ptr2str(string);
+
+    let td = gen_trapdoor_for_prefix_search_exact::<_, Fr, _>(&sk, region_name, string, &mut rng)
+        .expect("Fail to generate a trapdoor in c_gen_trapdoor_for_prefix_search_exact");
+    let td_str = serde_json::to_string(&td).expect(
+        "Fail to convert a ciphertext to a string in c_gen_trapdoor_for_prefix_search_exact",
+    );
+    CPecdkTrapdoor {
+        ptr: str2ptr(td_str),
+    }
+}
+
+#[no_mangle]
 pub extern "C" fn c_gen_ciphertext_for_range_search(
     public_key: CPecdkPublicKey,
     region_name: *mut c_char,
