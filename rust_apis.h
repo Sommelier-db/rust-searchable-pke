@@ -70,6 +70,10 @@ struct CPecdkTrapdoor c_gen_trapdoor_for_prefix_search(struct CPecdkSecretKey se
                                                        char *region_name,
                                                        char *prefix);
 
+struct CPecdkTrapdoor c_gen_trapdoor_for_prefix_search_exact(struct CPecdkSecretKey secret_key,
+                                                             char *region_name,
+                                                             char *string);
+
 struct CPecdkTrapdoor c_gen_trapdoor_for_range_search(struct CPecdkSecretKey secret_key,
                                                       char *region_name,
                                                       unsigned int min,
