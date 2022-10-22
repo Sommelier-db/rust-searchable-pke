@@ -1,5 +1,5 @@
 [package]
-name = "rust_searchable_pke"
+name = "rust-searchable-pke"
 version = "0.1.0"
 author = ["Sora Suegami"]
 edition = "2021"
@@ -28,8 +28,6 @@ getrandom = { version = "0.2", features = ["js"] }
 [dev-dependencies]
 rand_xorshift = "0.2"
 
-[lib]
-crate-type = ["cdylib"]
 
 [features]
 default = ["c_api"]
