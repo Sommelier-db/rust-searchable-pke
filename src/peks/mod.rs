@@ -6,10 +6,10 @@ use rand_core::RngCore;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-#[cfg(feature = "c_api")]
+/*#[cfg(feature = "c_api")]
 mod c_api;
 #[cfg(feature = "c_api")]
-pub use c_api::*;
+pub use c_api::*;*/
 
 #[derive(Error, Debug)]
 pub enum PEKSError {

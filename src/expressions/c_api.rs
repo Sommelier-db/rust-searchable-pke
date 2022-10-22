@@ -10,10 +10,10 @@ use std::os::raw::c_char;
 use std::os::raw::c_uint;
 
 #[no_mangle]
-pub extern "C" fn c_gen_ciphertext_for_field_search(
+pub extern "C" fn genCiphertextForFieldSearch(
     public_key: CPecdkPublicKey,
     region_name: *mut c_char,
-    num_fields: c_uint,
+    num_fields: usize,
     fields: *mut *mut c_char,
     vals: *mut *mut c_char,
 ) -> CPecdkCiphertext {
@@ -28,16 +28,6 @@ pub extern "C" fn c_gen_ciphertext_for_field_search(
         }
     };
     let region_name = ptr2str(region_name);
-
-    let num_fields: usize = match num_fields.try_into() {
-        Ok(num) => num,
-        Err(_) => {
-            set_errno(Errno(EINVAL));
-            return CPecdkCiphertext {
-                ptr: str2ptr(String::new()),
-            };
-        }
-    };
     let fields_slice = unsafe { slice::from_raw_parts(fields, num_fields) };
     let fields = fields_slice
         .into_iter()
@@ -63,14 +53,14 @@ pub extern "C" fn c_gen_ciphertext_for_field_search(
 }
 
 #[no_mangle]
-pub extern "C" fn c_gen_trapdoor_for_field_and_search(
+pub extern "C" fn genTrapdoorForFieldAndSearch(
     secret_key: CPecdkSecretKey,
     region_name: *mut c_char,
-    num_fields: c_uint,
+    num_fields: usize,
     fields: *mut *mut c_char,
     vals: *mut *mut c_char,
 ) -> CPecdkTrapdoor {
-    c_gen_trapdoor_for_field_search_generic(
+    genTrapdoorForFieldSearchGeneric(
         secret_key,
         region_name,
         num_fields,
@@ -81,14 +71,14 @@ pub extern "C" fn c_gen_trapdoor_for_field_and_search(
 }
 
 #[no_mangle]
-pub extern "C" fn c_gen_trapdoor_for_field_or_search(
+pub extern "C" fn genTrapdoorForFieldOrSearch(
     secret_key: CPecdkSecretKey,
     region_name: *mut c_char,
-    num_fields: c_uint,
+    num_fields: usize,
     fields: *mut *mut c_char,
     vals: *mut *mut c_char,
 ) -> CPecdkTrapdoor {
-    c_gen_trapdoor_for_field_search_generic(
+    genTrapdoorForFieldSearchGeneric(
         secret_key,
         region_name,
         num_fields,
@@ -98,10 +88,10 @@ pub extern "C" fn c_gen_trapdoor_for_field_or_search(
     )
 }
 
-fn c_gen_trapdoor_for_field_search_generic(
+fn genTrapdoorForFieldSearchGeneric(
     secret_key: CPecdkSecretKey,
     region_name: *mut c_char,
-    num_fields: c_uint,
+    num_fields: usize,
     fields: *mut *mut c_char,
     vals: *mut *mut c_char,
     sym: SearchSym,
@@ -117,16 +107,6 @@ fn c_gen_trapdoor_for_field_search_generic(
         }
     };
     let region_name = ptr2str(region_name);
-
-    let num_fields: usize = match num_fields.try_into() {
-        Ok(num) => num,
-        Err(_) => {
-            set_errno(Errno(EINVAL));
-            return CPecdkTrapdoor {
-                ptr: str2ptr(String::new()),
-            };
-        }
-    };
     let fields_slice = unsafe { slice::from_raw_parts(fields, num_fields) };
     let fields = fields_slice
         .into_iter()
@@ -160,7 +140,7 @@ fn c_gen_trapdoor_for_field_search_generic(
 }
 
 #[no_mangle]
-pub extern "C" fn c_gen_ciphertext_for_prefix_search(
+pub extern "C" fn genCiphertextForPrefixSearch(
     public_key: CPecdkPublicKey,
     region_name: *mut c_char,
     string: *mut c_char,
@@ -187,7 +167,7 @@ pub extern "C" fn c_gen_ciphertext_for_prefix_search(
 }
 
 #[no_mangle]
-pub extern "C" fn c_gen_trapdoor_for_prefix_search(
+pub extern "C" fn genTrapdoorForPrefixSearch(
     secret_key: CPecdkSecretKey,
     region_name: *mut c_char,
     prefix: *mut c_char,
@@ -215,7 +195,7 @@ pub extern "C" fn c_gen_trapdoor_for_prefix_search(
 }
 
 #[no_mangle]
-pub extern "C" fn c_gen_trapdoor_for_prefix_search_exact(
+pub extern "C" fn genTrapdoorForPrefixSearchExact(
     secret_key: CPecdkSecretKey,
     region_name: *mut c_char,
     string: *mut c_char,
@@ -244,10 +224,10 @@ pub extern "C" fn c_gen_trapdoor_for_prefix_search_exact(
 }
 
 #[no_mangle]
-pub extern "C" fn c_gen_ciphertext_for_range_search(
+pub extern "C" fn genCiphertextForRangeSearch(
     public_key: CPecdkPublicKey,
     region_name: *mut c_char,
-    bit_size: c_uint,
+    bit_size: usize,
     val: c_uint,
 ) -> CPecdkCiphertext {
     let mut rng = OsRng;
@@ -261,15 +241,6 @@ pub extern "C" fn c_gen_ciphertext_for_range_search(
         }
     };
     let region_name = ptr2str(region_name);
-    let bit_size: usize = match bit_size.try_into() {
-        Ok(num) => num,
-        Err(_) => {
-            set_errno(Errno(EINVAL));
-            return CPecdkCiphertext {
-                ptr: str2ptr(String::new()),
-            };
-        }
-    };
     let val: u64 = match val.try_into() {
         Ok(num) => num,
         Err(_) => {
@@ -289,12 +260,12 @@ pub extern "C" fn c_gen_ciphertext_for_range_search(
 }
 
 #[no_mangle]
-pub extern "C" fn c_gen_trapdoor_for_range_search(
+pub extern "C" fn genTrapdoorForRangeSearch(
     secret_key: CPecdkSecretKey,
     region_name: *mut c_char,
     min: c_uint,
     max: c_uint,
-    bit_size: c_uint,
+    bit_size: usize,
 ) -> CPecdkTrapdoor {
     let mut rng = OsRng;
     let sk = match serde_json::from_str::<SecretKey<Bls12>>(&ptr2str(secret_key.ptr)) {
@@ -317,15 +288,6 @@ pub extern "C" fn c_gen_trapdoor_for_range_search(
         }
     };
     let max: u64 = match max.try_into() {
-        Ok(num) => num,
-        Err(_) => {
-            set_errno(Errno(EINVAL));
-            return CPecdkTrapdoor {
-                ptr: str2ptr(String::new()),
-            };
-        }
-    };
-    let bit_size: usize = match bit_size.try_into() {
         Ok(num) => num,
         Err(_) => {
             set_errno(Errno(EINVAL));

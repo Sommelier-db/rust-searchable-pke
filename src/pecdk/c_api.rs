@@ -34,9 +34,9 @@ pub struct CPecdkTrapdoor {
 pub(crate) const EINVAL: i32 = 22;
 
 #[no_mangle]
-pub extern "C" fn pecdk_gen_secret_key(num_keyword: c_uint) -> CPecdkSecretKey {
+pub extern "C" fn pecdkGenSecretKey(num_keyword: usize) -> CPecdkSecretKey {
     let mut rng = OsRng;
-    let sk = SecretKey::<Bls12>::gen(&mut rng, num_keyword as usize);
+    let sk = SecretKey::<Bls12>::gen(&mut rng, num_keyword);
     let sk_str = serde_json::to_string(&sk)
         .expect("Fail to convert a secret key to a string in pecdk_gen_secret_key");
     CPecdkSecretKey {
@@ -45,7 +45,7 @@ pub extern "C" fn pecdk_gen_secret_key(num_keyword: c_uint) -> CPecdkSecretKey {
 }
 
 #[no_mangle]
-pub extern "C" fn pecdk_gen_public_key(secret_key: CPecdkSecretKey) -> CPecdkPublicKey {
+pub extern "C" fn pecdkGenPublicKey(secret_key: CPecdkSecretKey) -> CPecdkPublicKey {
     let mut rng = OsRng;
     let sk = match serde_json::from_str::<SecretKey<Bls12>>(&ptr2str(secret_key.ptr)) {
         Ok(sk) => sk,
@@ -65,7 +65,7 @@ pub extern "C" fn pecdk_gen_public_key(secret_key: CPecdkSecretKey) -> CPecdkPub
 }
 
 #[no_mangle]
-pub extern "C" fn pecdk_encrypt_keyword(
+pub extern "C" fn pecdkEncryptKeyword(
     public_key: CPecdkPublicKey,
     keywords: *mut *mut c_char,
 ) -> CPecdkCiphertext {
@@ -96,10 +96,10 @@ pub extern "C" fn pecdk_encrypt_keyword(
 }
 
 #[no_mangle]
-pub extern "C" fn pecdk_gen_trapdoor(
+pub extern "C" fn pecdkGenTrapdoor(
     secret_key: CPecdkSecretKey,
     keywords: *mut *mut c_char,
-    num_keyword: c_uint,
+    num_keyword: usize,
     sym: c_int,
 ) -> CPecdkTrapdoor {
     let mut rng = OsRng;
@@ -141,7 +141,7 @@ pub extern "C" fn pecdk_gen_trapdoor(
 }
 
 #[no_mangle]
-pub extern "C" fn pecdk_test(ciphertext: CPecdkCiphertext, trapdoor: CPecdkTrapdoor) -> c_int {
+pub extern "C" fn pecdkTest(ciphertext: CPecdkCiphertext, trapdoor: CPecdkTrapdoor) -> c_int {
     let ct = match serde_json::from_str::<Ciphertext<Bls12>>(&ptr2str(ciphertext.ptr)) {
         Ok(ct) => ct,
         Err(_) => {
@@ -167,21 +167,21 @@ pub extern "C" fn pecdk_test(ciphertext: CPecdkCiphertext, trapdoor: CPecdkTrapd
 }
 
 #[no_mangle]
-pub extern "C" fn pecdk_free_secret_key(secret_key: CPecdkSecretKey) {
+pub extern "C" fn pecdkFreeSecretKey(secret_key: CPecdkSecretKey) {
     drop_ptr(secret_key.ptr);
 }
 
 #[no_mangle]
-pub extern "C" fn pecdk_free_public_key(public_key: CPecdkPublicKey) {
+pub extern "C" fn pecdkFreePublicKey(public_key: CPecdkPublicKey) {
     drop_ptr(public_key.ptr);
 }
 
 #[no_mangle]
-pub extern "C" fn pecdk_free_ciphertext(ciphertext: CPecdkCiphertext) {
+pub extern "C" fn pecdkFreeCiphertext(ciphertext: CPecdkCiphertext) {
     drop_ptr(ciphertext.ptr);
 }
 
 #[no_mangle]
-pub extern "C" fn pecdk_free_trapdoor(trapdoor: CPecdkTrapdoor) {
+pub extern "C" fn pecdkFreeTrapdoor(trapdoor: CPecdkTrapdoor) {
     drop_ptr(trapdoor.ptr);
 }
