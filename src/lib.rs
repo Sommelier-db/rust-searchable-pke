@@ -1,11 +1,12 @@
-#[cfg(feature = "c_api")]
-mod c_utils;
-
 mod expressions;
 mod hashes;
 mod pecdk;
 mod peks;
 mod utils;
+
+#[cfg(feature = "c_api")]
+mod c_utils;
+
 pub use crate::expressions::*;
 pub use crate::hashes::*;
 pub use crate::pecdk::*;
