@@ -28,6 +28,10 @@ getrandom = { version = "0.2", features = ["js"] }
 [dev-dependencies]
 rand_xorshift = "0.2"
 
+[lib]
+name = "rust_searchable_pke"
+path = "src/lib.rs"
+crate-type = ["cdylib"]
 
 [features]
 default = ["c_api"]
