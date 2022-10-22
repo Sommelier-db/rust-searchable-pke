@@ -1,5 +1,5 @@
 [package]
-name = "rust-searchable-pke"
+name = "rust_searchable_pke"
 version = "0.1.0"
 author = ["Sora Suegami"]
 edition = "2021"
