@@ -1,7 +1,12 @@
+#[cfg(feature = "c_api")]
 mod c_api;
+
 use crate::utils::polynomial_from_roots;
 use crate::{hashes::*, BaseROFr};
+
+#[cfg(feature = "c_api")]
 pub use c_api::*;
+
 use fff::{Field, PrimeField};
 use groupy::{CurveAffine, CurveProjective};
 use paired::{Engine, PairingCurveAffine};
@@ -489,4 +494,48 @@ mod test {
             .unwrap();
         trapdoor.test(&ct).unwrap()
     }
+
+    #[test]
+    fn test_pecdk_size() {
+        let mut rng = <XorShiftRng as SeedableRng>::from_seed([
+            0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06,
+            0xbc, 0xe5,
+        ]);
+        let n = 64;
+        let mut thread_rng = thread_rng();
+        let mut keywords = Vec::with_capacity(n);
+        for _ in 0..n {
+            let keyword = (0..16).map(|_| thread_rng.gen()).collect::<Vec<u8>>();
+            keywords.push(keyword);
+        }
+        let m = 64;
+        let secret_key = SecretKey::<Bls12>::gen(&mut rng, n);
+        let sk_json = serde_json::to_string(&secret_key).unwrap();
+        println!("sk_json {}", sk_json.len());
+        let public_key = secret_key.into_public_key(&mut rng);
+        let pk_json = serde_json::to_string(&public_key).unwrap();
+        println!("pk_json {}", pk_json.len());
+        let ct = public_key
+            .encrypt::<_, Fr>(keywords.clone(), &mut rng)
+            .unwrap();
+        let ct_json = serde_json::to_string(&ct).unwrap();
+        println!("ct_json {}", ct_json.len());
+        let trapdoor = secret_key
+            .gen_trapdoor::<_, Fr>(keywords, SearchSym::AND, &mut rng)
+            .unwrap();
+        let td_json = serde_json::to_string(&trapdoor).unwrap();
+        println!("td_json {}", td_json.len());
+    }
 }
+
+// n=128
+// sk: 21735 21735 21735 21735 21735 21735 21735 21735 21735 21735
+// pk: 91064 91064 91064 91064 91064 91064 91064 91064 91064 91064
+// ct: 11427364 11427737 11427427 11426151 11427047 11428346 11427486 11428057 11427596
+// td: 44984 45037 44796 45035 45045 44888 44951 45000 44968
+
+// n=64
+// sk: 11086 11086 11086 11086 11086 11086 11086 11086 11086 11086
+// pk: 47112 47112 47112 47112 47112 47112 47112 47112 47112 47112
+// ct: 2893903 2893706 2893835 2894411 2893342 2893720 2893491 2892935 2894045 2894123
+// td: 22696 22765 22675 22729 22641 22702 22732 22734 22787 22765

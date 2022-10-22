@@ -1,4 +1,6 @@
+#[cfg(feature = "c_api")]
 mod c_utils;
+
 pub mod expressions;
 mod hashes;
 pub mod pecdk;

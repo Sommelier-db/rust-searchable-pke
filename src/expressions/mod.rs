@@ -1,9 +1,14 @@
+#[cfg(feature = "c_api")]
 mod c_api;
+
 mod fields_and_or;
 mod prefix;
 mod range;
 mod utils;
+
+#[cfg(feature = "c_api")]
 pub use c_api::*;
+
 pub use fields_and_or::*;
 pub use prefix::*;
 pub use range::*;
