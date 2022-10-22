@@ -1,16 +1,12 @@
-mod expressions;
+pub mod expressions;
 mod hashes;
-mod pecdk;
-mod peks;
+pub mod pecdk;
+pub mod peks;
 mod utils;
 
 #[cfg(feature = "c_api")]
 mod c_utils;
 
-pub use crate::expressions::*;
-pub use crate::hashes::*;
-pub use crate::pecdk::*;
-pub use crate::peks::*;
 use paired::{
     bls12_381::{Bls12, Fr},
     BaseFromRO, Engine,
