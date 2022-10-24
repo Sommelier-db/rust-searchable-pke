@@ -509,20 +509,21 @@ mod test {
             keywords.push(keyword);
         }
         let secret_key = SecretKey::<Bls12>::gen(&mut rng, n);
-        let sk_json = serde_json::to_string(&secret_key).unwrap();
+        //let sk_json = serde_json::to_string(&secret_key).unwrap();
         //println!("sk_json {}", sk_json.len());
         let public_key = secret_key.into_public_key(&mut rng);
-        let pk_json = serde_json::to_string(&public_key).unwrap();
+        //let pk_json = serde_json::to_string(&public_key).unwrap();
         //println!("pk_json {}", pk_json.len());
         let ct = public_key
             .encrypt::<_, Fr>(keywords.clone(), &mut rng)
             .unwrap();
-        let ct_json = serde_json::to_string(&ct).unwrap();
+        //let ct_json = serde_json::to_string(&ct).unwrap();
         //println!("ct_json {}", ct_json.len());
         let trapdoor = secret_key
             .gen_trapdoor::<_, Fr>(keywords, SearchSym::AND, &mut rng)
             .unwrap();
-        let td_json = serde_json::to_string(&trapdoor).unwrap();
+        assert_eq!(trapdoor.test(&ct).unwrap(), true)
+        //let td_json = serde_json::to_string(&trapdoor).unwrap();
         //println!("td_json {}", td_json.len());
     }
 }

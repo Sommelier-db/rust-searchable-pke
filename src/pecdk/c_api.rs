@@ -5,7 +5,7 @@ use errno::{set_errno, Errno};
 use paired::bls12_381::{Bls12, Fr};
 use rand_core::OsRng;
 use std::os::raw::c_char;
-use std::os::raw::{c_int, c_uint};
+use std::os::raw::c_int;
 
 #[repr(C)]
 #[derive(Debug, Clone)]

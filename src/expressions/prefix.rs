@@ -110,7 +110,6 @@ mod test {
     use super::*;
 
     use paired::bls12_381::{Bls12, Fr};
-    use rand::{thread_rng, Rng};
     use rand_core::SeedableRng;
     use rand_xorshift::XorShiftRng;
 

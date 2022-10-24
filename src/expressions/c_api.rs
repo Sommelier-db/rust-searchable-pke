@@ -60,7 +60,7 @@ pub extern "C" fn genTrapdoorForFieldAndSearch(
     fields: *mut *mut c_char,
     vals: *mut *mut c_char,
 ) -> CPecdkTrapdoor {
-    genTrapdoorForFieldSearchGeneric(
+    gen_trapdoor_for_field_search_generic(
         secret_key,
         region_name,
         num_fields,
@@ -78,7 +78,7 @@ pub extern "C" fn genTrapdoorForFieldOrSearch(
     fields: *mut *mut c_char,
     vals: *mut *mut c_char,
 ) -> CPecdkTrapdoor {
-    genTrapdoorForFieldSearchGeneric(
+    gen_trapdoor_for_field_search_generic(
         secret_key,
         region_name,
         num_fields,
@@ -88,7 +88,7 @@ pub extern "C" fn genTrapdoorForFieldOrSearch(
     )
 }
 
-fn genTrapdoorForFieldSearchGeneric(
+fn gen_trapdoor_for_field_search_generic(
     secret_key: CPecdkSecretKey,
     region_name: *mut c_char,
     num_fields: usize,
