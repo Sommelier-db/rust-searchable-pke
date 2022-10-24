@@ -29,7 +29,7 @@ getrandom = { version = "0.2", features = ["js"] }
 rand_xorshift = "0.2"
 
 [lib]
-crate-type = ["rlib","cdylib"]
+crate-type = ["rlib","cdylib","staticlib"]
 
 [features]
 default = ["c_api"]
