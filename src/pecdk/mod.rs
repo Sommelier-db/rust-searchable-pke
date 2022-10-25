@@ -32,6 +32,7 @@ pub struct SecretKey<E: Engine> {
     betas: Vec<E::Fr>,
     theta: E::Fr,
     g1: E::G1Affine,
+    g2: E::G2Affine,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -80,11 +81,13 @@ impl<E: Engine> SecretKey<E> {
             .collect::<Vec<E::Fr>>();
         let theta = <E::Fr as Field>::random(rng);
         let g1 = <E::G1 as CurveProjective>::random(rng).into_affine();
+        let g2 = <E::G2 as CurveProjective>::random(rng).into_affine();
         Self {
             alphas,
             betas,
             theta,
             g1,
+            g2,
         }
     }
 
@@ -92,8 +95,8 @@ impl<E: Engine> SecretKey<E> {
         self.alphas.len() - 1
     }
 
-    pub fn into_public_key<R: RngCore>(&self, rng: &mut R) -> PublicKey<E> {
-        let g2 = <E::G2 as CurveProjective>::random(rng).into_affine();
+    pub fn into_public_key(&self) -> PublicKey<E> {
+        let g2 = self.g2;
         let x_points = self
             .alphas
             .clone()
@@ -184,8 +187,8 @@ impl<E: Engine> PublicKey<E> {
         self.x_points.len() - 1
     }
 
-    pub fn from_secret_key<R: RngCore>(secret_key: &SecretKey<E>, rng: &mut R) -> Self {
-        secret_key.into_public_key(rng)
+    pub fn from_secret_key(secret_key: &SecretKey<E>) -> Self {
+        secret_key.into_public_key()
     }
 
     pub fn encrypt<R: RngCore, F: BaseROFr<E>>(
@@ -487,7 +490,7 @@ mod test {
     ) -> bool {
         let n = ct_keywords.len();
         let secret_key = SecretKey::<Bls12>::gen(&mut rng, n);
-        let public_key = secret_key.into_public_key(&mut rng);
+        let public_key = secret_key.into_public_key();
         let ct = public_key.encrypt::<_, Fr>(ct_keywords, &mut rng).unwrap();
         let trapdoor = secret_key
             .gen_trapdoor::<_, Fr>(td_keywords, sym, &mut rng)
@@ -511,7 +514,7 @@ mod test {
         let secret_key = SecretKey::<Bls12>::gen(&mut rng, n);
         //let sk_json = serde_json::to_string(&secret_key).unwrap();
         //println!("sk_json {}", sk_json.len());
-        let public_key = secret_key.into_public_key(&mut rng);
+        let public_key = secret_key.into_public_key();
         //let pk_json = serde_json::to_string(&public_key).unwrap();
         //println!("pk_json {}", pk_json.len());
         let ct = public_key

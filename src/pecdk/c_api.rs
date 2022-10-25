@@ -46,7 +46,6 @@ pub extern "C" fn pecdkGenSecretKey(num_keyword: usize) -> CPecdkSecretKey {
 
 #[no_mangle]
 pub extern "C" fn pecdkGenPublicKey(secret_key: CPecdkSecretKey) -> CPecdkPublicKey {
-    let mut rng = OsRng;
     let sk = match serde_json::from_str::<SecretKey<Bls12>>(&ptr2str(secret_key.ptr)) {
         Ok(sk) => sk,
         Err(_) => {
@@ -56,7 +55,7 @@ pub extern "C" fn pecdkGenPublicKey(secret_key: CPecdkSecretKey) -> CPecdkPublic
             };
         }
     };
-    let pk = sk.into_public_key(&mut rng);
+    let pk = sk.into_public_key();
     let pk_str = serde_json::to_string(&pk)
         .expect("Fail to convert a public key to a string in pecdk_gen_public_key");
     CPecdkPublicKey {

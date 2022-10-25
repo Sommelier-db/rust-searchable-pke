@@ -113,7 +113,7 @@ mod test {
         ]);
         let n = 5;
         let secret_key = SecretKey::<Bls12>::gen(&mut rng, n);
-        let public_key = secret_key.into_public_key(&mut rng);
+        let public_key = secret_key.into_public_key();
         let region_name = "test_valid_and_case_simple";
         let mut field_val_map = HashMap::new();
         let mut thread_rng = thread_rng();
@@ -147,7 +147,7 @@ mod test {
         ]);
         let n = 5;
         let secret_key = SecretKey::<Bls12>::gen(&mut rng, n);
-        let public_key = secret_key.into_public_key(&mut rng);
+        let public_key = secret_key.into_public_key();
         let region_name = "test_valid_or_case_simple";
         let mut field_val_map = HashMap::new();
         let mut thread_rng = thread_rng();

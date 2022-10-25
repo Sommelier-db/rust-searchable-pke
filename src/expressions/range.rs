@@ -197,7 +197,7 @@ mod test {
         let bit_size = 5;
         let n = compute_max_keyword_size(bit_size);
         let secret_key = SecretKey::<Bls12>::gen(&mut rng, n);
-        let public_key = secret_key.into_public_key(&mut rng);
+        let public_key = secret_key.into_public_key();
         let region_name = "test_valid_range_case_simple";
         let min = 10;
         let max = 30;
@@ -231,7 +231,7 @@ mod test {
         let bit_size = 5;
         let n = compute_max_keyword_size(bit_size);
         let secret_key = SecretKey::<Bls12>::gen(&mut rng, n);
-        let public_key = secret_key.into_public_key(&mut rng);
+        let public_key = secret_key.into_public_key();
         let region_name = "test_invalid_range_case_simple";
         let min = 2;
         let max = 20;
