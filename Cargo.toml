@@ -30,11 +30,12 @@ getrandom = { version = "0.2", features = ["js"] }
 rand_xorshift = "0.2"
 
 [build-dependencies]
-libtool = "0.1"
+libtool = {version = "0.1", optional = true}
 
 [lib]
 crate-type = ["rlib","cdylib","staticlib"]
 
 [features]
-default = ["c_api"]
+default = ["c_api","la"]
 c_api = ["errno"]
+la = ["libtool"]
