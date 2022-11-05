@@ -20,12 +20,12 @@ Our current implementation follows the scheme proposed in [2]. Its APIs are avai
 
 Furthermore, our library provides expressive search criteria as below. Notably, all of them are implemented by changing how to construct the keywords in the PECDK scheme.
 
-- Field And/OR Search
-It encrypts multiple pairs of field name and value and retrieves their encryption that includes all/one of the specified pairs in the AND/OR search. 
-- Range Search
-It encrypts an unsigned integer and retrieves the encryption whose integer is within the specified range.
-- Prefix Search
-It encrypts a string and retrieves the encryption whose string has the specified prefix.
+- Field And/OR Search: 
+it encrypts multiple pairs of field name and value and retrieves their encryption that includes all/one of the specified pairs in the AND/OR search. 
+- Range Search:
+it encrypts an unsigned integer and retrieves the encryption whose integer is within the specified range.
+- Prefix Search:
+it encrypts a string and retrieves the encryption whose string has the specified prefix.
 
 ## C APIs
 Our library also provides C apis for the above functions.
