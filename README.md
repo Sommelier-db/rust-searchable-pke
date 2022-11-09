@@ -12,9 +12,11 @@ Our library allows you to use its features without understanding how it works.
 Specifically, the following schemes are supported.
 
 1. Public-key Encryption with Keyword Search (PEKS)
+
 Public-key encryption with keyword search (PEKS) is the first and the simplest PKSE scheme [1]. It can search only for keyword encryptions that exactly match the given keywords. Its APIs are available [here](https://github.com/SoraSuegami/rust-searchable-pke/tree/master/src/peks).
 
 2. Public-key Encryption with Conjunctive and Disjunctive Keyword search (PECDK)
+
 Public-key encryption with conjunctive and disjunctive keyword search (PECDK) encrypts multiple keywords into one ciphertext and supports conjunctive and disjunctive of keywords as search criteria [2]. For example, we consider an encryptions of keywords "Alice, Emergency, Accident". It matches the conjunction of keywords "Alice, Emergency" and the disjunction of keywords "Alice, Bob".
 Our current implementation follows the scheme proposed in [2]. Its APIs are available [here](https://github.com/SoraSuegami/rust-searchable-pke/tree/master/src/pecdk).
 
